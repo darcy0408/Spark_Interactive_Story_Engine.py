@@ -26,9 +26,13 @@ class StoryEngine:
         if os.path.exists("characters.json"):
             try:
                 with open("characters.json", 'r', encoding='utf-8') as f:
-                    return json.load(f)
+                    # Handle empty file case
+                    if os.path.getsize("characters.json") > 0:
+                        return json.load(f)
+                    else:
+                        return []
             except json.JSONDecodeError:
-                return [] # Return empty list if file is empty or corrupted
+                return [] # Return empty list if file is corrupted
         return []
 
     def save_character_profiles(self, characters_in_story):
@@ -53,7 +57,7 @@ class StoryEngine:
         self.story_text = ""
         self.key_items = []
         self.wisdom_gem = ""
-        self.story_analysis = {} # To store the new analysis
+        self.story_analysis = {}
 
         print("\n✨ Let's create a new personalized adventure! ✨\n")
 
@@ -63,11 +67,9 @@ class StoryEngine:
         self.intake_calibration()
 
         if self.generate_story_with_ai():
-            self.analyze_story_content() # New step!
+            self.analyze_story_content()
             self.generate_adventure_report()
             self.save_story_to_file()
-
-    # Methods for select_genre, select_tone, select_story_length remain the same...
 
     def select_genre(self):
         print("📚 What type of story would you like?")
@@ -93,7 +95,6 @@ class StoryEngine:
         self.story_length = lengths.get(choice, "Medium (~700 words)")
         print(f"✓ Selected: {self.story_length}\n")
 
-
     def intake_calibration(self):
         profile = {}
         characters = []
@@ -102,7 +103,7 @@ class StoryEngine:
             print("👥 You have saved characters. Would you like to use one?")
             for i, char in enumerate(self.saved_characters):
                 print(f"{i + 1}. {char['name']} (Age: {char['age']})")
-
+            
             while True:
                 use_saved = input("Enter number to add, 'n' for a new character, or Enter when done: ").lower()
                 if use_saved.isdigit() and 0 < int(use_saved) <= len(self.saved_characters):
@@ -112,18 +113,20 @@ class StoryEngine:
                         print(f"✓ Added {selected_char['name']} to the story!")
                     else:
                         print(f"-> {selected_char['name']} is already in the story.")
-                elif use_saved == 'n':
-                    break
-                elif use_saved == '':
+                elif use_saved == 'n' or use_saved == '':
                     break
 
         while True:
+            # Ask to add a new character if the list is empty, or explicitly ask otherwise
             if not characters or input("Add a new character to the story? (y/n): ").lower() == 'y':
                 print("\n--- New Character ---")
                 while True:
                     age_input = input("Age: ")
-                    try: age = int(age_input); break
-                    except ValueError: print("❌ Invalid input. Please enter a number for the age.")
+                    try: 
+                        age = int(age_input)
+                        break
+                    except ValueError: 
+                        print("❌ Invalid input. Please enter a number for the age.")
 
                 char = {
                     'name': input("Name: "), 'age': age,
@@ -131,12 +134,14 @@ class StoryEngine:
                     'favorites': input("Loves (e.g., 'dinosaurs and puzzles'): ")
                 }
                 special = input("Any special trait or appearance? [press Enter to skip]: ")
-                if special: char['special_trait'] = special
+                if special: 
+                    char['special_trait'] = special
+                
                 characters.append(char)
                 print(f"✓ Added {char['name']} to the story!")
             else:
                 break
-
+        
         if not characters:
             print("Every story needs a hero! Adding a default character.")
             characters.append({'name': 'Alex', 'age': 8, 'personality': "brave and kind", 'favorites': "adventures"})
@@ -153,7 +158,6 @@ class StoryEngine:
         print("\n✨ Weaving your magical story... (This may take a moment) ✨")
         char_descriptions = "\n".join([f"- **Name**: {c['name']}, **Age**: {c['age']}, **Personality**: {c['personality']}, **Loves**: {c['favorites']}" + (f", **Trait**: {c['special_trait']}" if 'special_trait' in c else "") for c in self.user_profile['characters']])
 
-        # --- UPDATED AND MORE FORCEFUL MASTER PROMPT ---
         master_prompt = f"""
         **C.R.A.F.T. Meta-Prompt: The Story Weaver**
 
@@ -180,7 +184,8 @@ class StoryEngine:
         3.  Embed 2-3 special objects directly in the text like this: `[KEY ITEM: The Sun-warmed Courage Stone]`.
         4.  Conclude the entire response with a final, single sentence: `[WISDOM GEM: A single, powerful sentence capturing the story's lesson.]`
         """
-
+        
+        # CORRECTED: The try/except block was incorrectly indented.
         try:
             response = self.model.generate_content(master_prompt)
             self.parse_ai_response(response.text)
@@ -188,7 +193,126 @@ class StoryEngine:
         except Exception as e:
             print(f"\n❌ ERROR: Could not generate the story. Details: {e}")
             return False
+            
+    def parse_ai_response(self, ai_text):
+        """
+        Parses the AI's response to extract the story title, story text, key items, and wisdom gem.
+        """
+        # FIXED: This logic correctly preserves Key Item names in the story text.
+        title_match = re.search(r'\[TITLE:(.*?)\]', ai_text, re.IGNORECASE | re.DOTALL)
+        self.story_title = title_match.group(1).strip() if title_match else "Untitled Story"
+        
+        self.key_items = [item.strip() for item in re.findall(r'\[KEY ITEM:(.*?)\]', ai_text, re.IGNORECASE)]
+        
+        wisdom_match = re.search(r'\[WISDOM GEM:(.*?)\]', ai_text, re.IGNORECASE | re.DOTALL)
+        self.wisdom_gem = wisdom_match.group(1).strip() if wisdom_match else ""
+        
+        # Clean the text of all tags for the final story output
+        story_text = re.sub(r'\[TITLE:.*?\]\s*', '', ai_text, flags=re.IGNORECASE | re.DOTALL)
+        story_text = re.sub(r'\[KEY ITEM:(.*?)\]', r'\1', story_text, flags=re.IGNORECASE) # Replace item tag with just the item name
+        story_text = re.sub(r'\[WISDOM GEM:.*?\]', '', story_text, flags=re.IGNORECASE | re.DOTALL).strip()
+        self.story_text = story_text
 
     def analyze_story_content(self):
-        """NEW: Analyzes the generated story for literary and developmental metrics."""
-        print("
+        """RESTORED: Full implementation of the story analysis feature."""
+        print("🔬 Analyzing story for depth and complexity...")
+        if not self.story_text:
+            return
+
+        analysis_prompt = f"""
+        You are a children's literacy expert. Analyze the following story based on several factors. Provide a concise report.
+
+        **Story to Analyze:**
+        "{self.story_text}"
+
+        **Format:** Provide your analysis using these exact tags, each on a new line:
+        [TARGET_AGE: e.g., 5-7 years old]
+        [READING_LEVEL: A brief description of the vocabulary and sentence structure.]
+        [THEMATIC_DEPTH: A one-sentence summary of the core themes explored.]
+        [ILLUSTRATION_SUGGESTIONS: List 2-3 key moments that would be perfect for illustrations, describing the scene.]
+        """
+        try:
+            response = self.model.generate_content(analysis_prompt)
+            # Use findall for robustness, then get the first element or a default
+            self.story_analysis['target_age'] = (re.findall(r'\[TARGET_AGE:(.*?)\]', response.text, re.I) or ['N/A'])[0].strip()
+            self.story_analysis['reading_level'] = (re.findall(r'\[READING_LEVEL:(.*?)\]', response.text, re.I) or ['N/A'])[0].strip()
+            self.story_analysis['thematic_depth'] = (re.findall(r'\[THEMATIC_DEPTH:(.*?)\]', response.text, re.I) or ['N/A'])[0].strip()
+            suggestions_text = (re.search(r'\[ILLUSTRATION_SUGGESTIONS:(.*)', response.text, re.I | re.DOTALL) or [None])[0]
+            if suggestions_text:
+                self.story_analysis['illustration_suggestions'] = [s.strip('- ').strip() for s in suggestions_text.strip().split('\n') if s.strip()]
+            else:
+                self.story_analysis['illustration_suggestions'] = []
+                
+        except Exception as e:
+            print(f"-> Could not analyze the story. Details: {e}")
+            self.story_analysis = {}
+
+    def generate_adventure_report(self):
+        """RESTORED: Full implementation for displaying the final report."""
+        print("\n" + "="*60)
+        print(f"📖 {self.story_title.upper()} 📖".center(60))
+        print("="*60 + "\n")
+        print(self.story_text)
+
+        if self.key_items:
+            print("\n" + "~"*40 + "\n" + "✨ MAGICAL ITEMS DISCOVERED ✨".center(40) + "\n" + "~"*40)
+            for i, item in enumerate(self.key_items, 1): print(f"{i}. {item}")
+
+        if self.wisdom_gem:
+            print("\n" + "~"*40 + "\n" + "💎 WISDOM GEM 💎".center(40) + "\n" + "~"*40)
+            print(f"\n{self.wisdom_gem}\n")
+
+        if self.story_analysis:
+            print("\n" + "="*60 + "\n" + "📊 STORY ANALYSIS REPORT 📊".center(60) + "\n" + "="*60)
+            print(f"🎯 Target Age: {self.story_analysis.get('target_age', 'N/A')}")
+            print(f"📚 Reading Level: {self.story_analysis.get('reading_level', 'N/A')}")
+            print(f"🧠 Thematic Depth: {self.story_analysis.get('thematic_depth', 'N/A')}")
+            if self.story_analysis.get('illustration_suggestions'):
+                print("🎨 Illustration Suggestions:")
+                for sug in self.story_analysis.get('illustration_suggestions', []):
+                    print(f"  - {sug}")
+
+    def save_story_to_file(self):
+        """RESTORED: Full implementation for saving the story and its analysis to a file."""
+        if not os.path.exists("stories"): os.makedirs("stories")
+        filename_title = re.sub(r'[^\w\s-]', '', self.story_title).strip().replace(' ', '_')
+        filename = f"stories/{filename_title}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+
+        try:
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(f"Title: {self.story_title}\n\n{self.story_text}\n\n")
+                if self.key_items:
+                    f.write("--- KEY ITEMS ---\n" + "\n".join([f"* {item}" for item in self.key_items]) + "\n\n")
+                if self.wisdom_gem:
+                    f.write(f"--- WISDOM GEM ---\n{self.wisdom_gem}\n\n")
+                if self.story_analysis:
+                    f.write("--- STORY ANALYSIS ---\n")
+                    f.write(f"Target Age: {self.story_analysis.get('target_age', 'N/A')}\n")
+                    f.write(f"Reading Level: {self.story_analysis.get('reading_level', 'N/A')}\n")
+                    f.write(f"Thematic Depth: {self.story_analysis.get('thematic_depth', 'N/A')}\n")
+                    if self.story_analysis.get('illustration_suggestions'):
+                        f.write("Illustration Suggestions:\n" + "\n".join([f"  - {sug}" for sug in self.story_analysis.get('illustration_suggestions', [])]))
+            print("\n" + "-"*50 + f"\n✅ Story successfully saved to: {filename}\n" + "-"*50)
+        except Exception as e:
+            print(f"\n❌ ERROR: Could not save the story. Details: {e}")
+
+
+if __name__ == "__main__":
+    print("="*60 + "\n" + "🌟 MAGICAL STORY CREATOR v5.0 🌟".center(60) + "\n" + "="*60)
+    print("\nThis program creates personalized adventure stories for children!")
+    print("(Get a free Google AI API key at: aistudio.google.com/app/apikey)\n")
+    try:
+        api_key = getpass.getpass("Paste your API Key (hidden for security): ")
+        if not api_key:
+            print("❌ An API Key is required to create stories.")
+        else:
+            engine = StoryEngine(api_key)
+            if engine.api_key_is_valid:
+                while True:
+                    engine.run_story_creation_cycle()
+                    if input("\n\nWould you like to create another story? (y/n): ").lower() != 'y': break
+                print("\n\n✨ Thanks for using the Magical Story Creator! ✨")
+    except KeyboardInterrupt:
+        print("\n\n✨ Thanks for using the Magical Story Creator! ✨")
+    except Exception as e:
+        print(f"\n❌ An unexpected error occurred: {e}")
