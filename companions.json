@@ -1,0 +1,56 @@
+{
+  "Robin": {
+    "name": "Robin",
+    "emoji": "🐦",
+    "species": "Robin bird",
+    "appearance": "80s teased feather-do, leg warmers, tiny sunglasses",
+    "personality": "Overprotective and anxious but incredibly loving",
+    "quirk": "Carries a tiny whistle and uses binoculars too big for her body",
+    "special_ability": "Eagle-eyed lookout who spots danger (and snacks) from miles away"
+  },
+  "Wilma": {
+    "name": "Wilma",
+    "emoji": "✨",
+    "species": "Fairy Godmother",
+    "appearance": "Curly red hair, sparkly apron with magical pockets",
+    "personality": "Warm, wise, unpredictable; laughs at her own jokes",
+    "quirk": "Her gifts always solve problems in unexpected ways",
+    "special_ability": "Can pull surprisingly useful items from her apron pockets"
+  },
+  "Mike": {
+    "name": "Mike",
+    "emoji": "🍀",
+    "species": "Leprechaun",
+    "appearance": "Scruffy red beard, toolbelt of odd items, mismatched socks",
+    "personality": "Witty, clever, sarcastic, prone to terrible puns",
+    "quirk": "Will only help if you can out-rhyme him",
+    "special_ability": "Can summon objects from his pockets after a rhyme battle"
+  },
+  "Bloop": {
+    "name": "Bloop",
+    "emoji": "🐙",
+    "species": "Transparent jellyfish",
+    "appearance": "See-through body with glowing magical tattoos",
+    "personality": "Gentle, shy but brilliant, speaks in bubbles",
+    "quirk": "Gets brighter when happy, dimmer when sad",
+    "special_ability": "Can light up memories or dreams in the water"
+  },
+  "Cogsley": {
+    "name": "Cogsley",
+    "emoji": "🔧",
+    "species": "Clockwork Mouse",
+    "appearance": "Brass gears visible through glass panels, tiny monocle",
+    "personality": "Nerdy, fast-talking, obsessed with punctuality",
+    "quirk": "Always knows exactly what time it is everywhere",
+    "special_ability": "Can slow down or rewind time for 30 seconds"
+  },
+  "Zara Moonwhistle": {
+    "name": "Zara Moonwhistle",
+    "emoji": "🌙",
+    "species": "Night Witch",
+    "appearance": "Cloak made of starlight, speaks in mysterious half-riddles",
+    "personality": "Mysterious, encouraging, appears when hope is lowest",
+    "quirk": "Only appears at night or in the darkest moments",
+    "special_ability": "Can whisper dreams into lanterns that come true"
+  }
+}
