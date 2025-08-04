@@ -52,6 +52,7 @@ class Character:
     """A character in the story with all necessary attributes."""
     name: str
     age: int
+    gender: str  # <-- Add this line
     personality: str
     favorites: str
     special_trait: Optional[str] = None
@@ -63,12 +64,12 @@ class Character:
         if self.age < 1 or self.age > 18:
             raise ValueError("Character age must be between 1 and 18")
     
-    def get_description(self) -> str:
-        """Returns a formatted description string for AI prompts."""
-        desc = f"- {self.name}, age {self.age}, who is {self.personality} and loves {self.favorites}"
-        if self.special_trait:
-            desc += f". Special: {self.special_trait}"
-        return desc
+def get_description(self) -> str:
+    """Returns a formatted description string for AI prompts."""
+    desc = f"- {self.name}, a {self.age}-year-old {self.gender}, who is {self.personality} and loves {self.favorites}"
+    if self.special_trait:
+        desc += f". Special: {self.special_trait}"
+    return desc
 
 
 @dataclass
